@@ -1,7 +1,12 @@
 from vector_store.chroma_store import ChromaStore
 from services.logger import logger
-import uuid
+from agents.writer.models import ResearchReport
 
+import uuid
+import json
+
+
+SIMILARITY_THRESHOLD = 0.30
 
 
 class MemoryService:
@@ -15,29 +20,31 @@ class MemoryService:
         logger.info("MemoryService initialized.")
 
     def save(
-    self,
-    topic: str,
-    content: str,
+        self,
+        topic: str,
+        report: ResearchReport,
     ):
         """
-        Save knowledge into memory.
+        Save a research report into memory.
         """
 
         self.store.add(
-            document=content,
+            document=report.model_dump_json(),
             metadata={
                 "topic": topic,
             },
             doc_id=str(uuid.uuid4()),
         )
-    
+
+        logger.info(f"Report saved for topic: {topic}")
+
     def retrieve(
-    self,
-    query: str,
-    top_k: int = 3,
-    )-> list[str]:
+        self,
+        query: str,
+        top_k: int = 1,
+    ) -> ResearchReport | None:
         """
-        Retrieve relevant memories.
+        Retrieve a relevant report from memory.
         """
 
         logger.info(
@@ -50,23 +57,38 @@ class MemoryService:
         )
 
         documents = results.get("documents", [])
+        distances = results.get("distances", [])
 
-        if not documents:
-            return []
+        if not documents or not distances:
+            logger.info("Memory miss.")
+            return None
 
-        return documents[0]
+        # Chroma returns nested lists
+        best_document = documents[0][0]
+        best_distance = distances[0][0]
+
+        logger.info(
+            f"Best memory distance: {best_distance:.4f}"
+        )
+
+        if best_distance > SIMILARITY_THRESHOLD:
+            logger.info(
+                "No sufficiently similar memory found."
+            )
+            return None
+
+        logger.info("Memory hit.")
+
+        data = json.loads(best_document)
+
+        return ResearchReport(**data)
 
     def has_memory(
-    self,
-    query: str,
+        self,
+        query: str,
     ) -> bool:
         """
         Determine whether relevant memory exists.
         """
 
-        memories = self.retrieve(
-            query=query,
-            top_k=1,
-        )
-
-        return len(memories) > 0
+        return self.retrieve(query) is not None

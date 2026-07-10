@@ -5,7 +5,7 @@ from pprint import pprint
 graph = ResearchGraph().build()
 
 state = WorkflowState(
-    topic="Environmental effects of AI"
+    topic="AI Applications in Agriculture"
 )
 
 result = graph.invoke(state)

@@ -39,7 +39,7 @@ class ChromaStore:
     def search(
         self,
         query: str,
-        top_k: int = 3,
+        top_k: int = 3,        
     ):
         """
         Retrieve similar documents.
@@ -48,4 +48,9 @@ class ChromaStore:
         return self.collection.query(
             query_texts=[query],
             n_results=top_k,
+            include=[
+                "documents",
+                "distances",
+                "metadatas",
+            ]
         )
