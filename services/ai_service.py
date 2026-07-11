@@ -50,6 +50,11 @@ class AIService:
                 text_format=response_model,
             )
 
+            """logger.info(response.usage)
+
+            logger.info(response.model_dump())"""
+            
+
             logger.info("Structured response received successfully.")
 
             return response.output_parsed

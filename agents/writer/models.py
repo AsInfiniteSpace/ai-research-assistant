@@ -15,5 +15,7 @@ class ResearchReport(BaseModel):
     )
 
     report: str = Field(
-        description="The complete research report in Markdown format with citations."
+        description="A publication-quality Markdown research report with "
+        "well-structured headings, tables where appropriate, "
+        "bullet points, citations, and a Sources section."
     )

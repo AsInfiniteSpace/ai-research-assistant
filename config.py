@@ -16,5 +16,13 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    HOST: str = "0.0.0.0"
+
+    PORT: int = 8000
+
+    DEBUG: bool = True
+
+    ENVIRONMENT: str = "development"
+
 
 settings = Settings()

@@ -4,6 +4,7 @@ from agents.planner.agent import PlannerAgent
 from agents.search.agent import SearchAgent
 from agents.writer.agent import WriterAgent
 from agents.evaluator.agent import EvaluatorAgent
+from services.timer import Timer
 
 from langgraph.graph import StateGraph, START, END
 from services.memory_service import MemoryService
@@ -21,7 +22,9 @@ class ResearchGraph:
         self.writer = WriterAgent()
         self.memory = MemoryService()
         self.evaluator = EvaluatorAgent()
-
+        self.timer = Timer()
+        
+    
     def memory_node(
     self,
     state: WorkflowState,
@@ -45,6 +48,9 @@ class ResearchGraph:
         else:
             logger.info("Memory miss.")
 
+        logger.info(
+            f"Memory Node completed in {self.timer.elapsed():.2f} seconds"
+        )
         return state
 
     def planner_node(
@@ -60,7 +66,9 @@ class ResearchGraph:
         state.plan = self.planner.create_plan(
             state.topic
         )
-
+        logger.info(
+            f"Planner Node completed in {self.timer.elapsed():.2f} seconds"
+        )
         return state
 
     def search_node(
@@ -75,13 +83,26 @@ class ResearchGraph:
 
         results = []
 
+        feedback = None
+
+        if (
+            state.evaluation is not None
+            and not state.evaluation.success
+        ):
+            feedback = state.evaluation.reasoning
+
         for task in state.plan.tasks:
             results.append(
-                self.search.search(task)
+                self.search.search(
+                    task,
+                    feedback,
+                )
             )
 
         state.search_results = results
-
+        logger.info(
+            f"Search Node completed in {self.timer.elapsed():.2f} seconds"
+        )
         return state    
 
     def writer_node(
@@ -98,7 +119,10 @@ class ResearchGraph:
             topic=state.topic,
             search_results=state.search_results,
         )
-
+        
+        logger.info(
+            f"Writer Node completed in {self.timer.elapsed():.2f} seconds"
+        )
         return state
 
     def save_memory_node(
@@ -112,7 +136,9 @@ class ResearchGraph:
             topic=state.topic,
             report=state.report,
         )
-        
+        logger.info(
+            f"Save Memory Node completed in {self.timer.elapsed():.2f} seconds"
+        )
         return state
 
     def evaluate_search_node(
@@ -138,11 +164,30 @@ class ResearchGraph:
             f"Evaluation Success: {evaluation.success}"
         )
 
+        logger.info(
+            f"Evaluation Serach Node completed in {self.timer.elapsed():.2f} seconds"
+        )
+        return state
+
+    def increment_retry_node(
+    self,
+    state: WorkflowState,
+    ) -> WorkflowState:
+
+        logger.info(
+            f"Retrying search ({state.retry_count + 1}/{state.max_retries})"
+        )
+        
+        logger.info("Evaluator Feedback:")
+        logger.info(state.evaluation.reasoning)
+        
+
+        state.retry_count += 1
+
         return state
 
 
-
-    def build(self):
+    def compile(self):
         
         """
         Build and compile the research graph.
@@ -177,7 +222,10 @@ class ResearchGraph:
             "save_memory",
             self.save_memory_node,
         )
-
+        builder.add_node(
+            "increment_retry",
+            self.increment_retry_node,
+        )
         """builder.add_edge(
         START,
         "planner",
@@ -204,6 +252,11 @@ class ResearchGraph:
         builder.add_conditional_edges(
             "evaluate_search",
             self.should_retry_search,
+        )
+
+        builder.add_edge(
+            "increment_retry",
+            "search",
         )
 
         builder.add_edge(
@@ -240,13 +293,12 @@ class ResearchGraph:
     state: WorkflowState,
     ):
         if state.evaluation is None:
-            return "search"
+            return "increment_retry"
 
         if state.evaluation.success:
             return "writer"
 
         if state.retry_count < state.max_retries:
-            state.retry_count += 1
-            return "search"
+            return "increment_retry"
 
         return "writer"

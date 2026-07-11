@@ -17,12 +17,19 @@ class SearchAgent(BaseAgent):
 
         self.search_tool = SearchTool()
 
-    def search(self, task: ResearchTask) -> SearchResults:
+    def search(
+        self,
+        task: ResearchTask,
+        feedback: str | None = None,
+    ) -> SearchResults:
         """
         Execute a web search for a research task.
         """
 
-        search_query = self.generate_search_query(task)
+        search_query = self.generate_search_query(
+            task,
+            feedback,
+        )
         
         raw_results = self.search_tool.execute(
             search_query.query
@@ -41,6 +48,7 @@ class SearchAgent(BaseAgent):
     def generate_search_query(
             self,
             task: ResearchTask,
+            feedback: str | None = None,
         ) -> SearchQuery:
 
         """
@@ -56,6 +64,13 @@ class SearchAgent(BaseAgent):
             f"{task.title}\n\n"
             f"{task.description}"
         )
+        if feedback:
+            user_prompt += (
+                "\n\nPrevious search evaluation:\n"
+                f"{feedback}\n\n"
+                "Generate a DIFFERENT and IMPROVED search query "
+                "that addresses the missing information."
+            )
 
         search_query = self.ai_service.generate(
             system_prompt=self.system_prompt,

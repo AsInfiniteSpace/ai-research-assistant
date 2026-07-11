@@ -6,7 +6,7 @@ import uuid
 import json
 
 
-SIMILARITY_THRESHOLD = 0.30
+SIMILARITY_THRESHOLD = 0.45
 
 
 class MemoryService:
@@ -59,6 +59,7 @@ class MemoryService:
         documents = results.get("documents", [])
         distances = results.get("distances", [])
 
+        
         if not documents or not distances:
             logger.info("Memory miss.")
             return None
