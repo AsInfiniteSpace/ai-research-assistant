@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from api.routes import router
 from fastapi.middleware.cors import CORSMiddleware
+from config import settings
 
 
 
@@ -11,6 +12,7 @@ app = FastAPI(
         "LangGraph, OpenAI, Tavily Search, and ChromaDB."
     ),
     version="1.0.0",
+    debug=settings.DEBUG,
 )
 
 app.add_middleware(

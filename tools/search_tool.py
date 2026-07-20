@@ -25,6 +25,15 @@ class SearchTool(BaseTool):
         self.log_execution()
 
         try:
+
+            MAX_QUERY_LENGTH = 350
+
+            query = query.strip()
+
+            if len(query) > MAX_QUERY_LENGTH:
+                query = query[:MAX_QUERY_LENGTH]
+                query = query.rsplit(" ", 1)[0]
+
             response = self.client.search(
                 query=query,
                 search_depth="advanced",

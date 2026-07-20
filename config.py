@@ -20,9 +20,9 @@ class Settings(BaseSettings):
 
     PORT: int = 8000
 
-    DEBUG: bool = True
+    DEBUG: bool = False
 
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = "production"
 
 
 settings = Settings()
